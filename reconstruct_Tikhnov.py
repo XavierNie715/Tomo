@@ -51,4 +51,4 @@ x_rec = scipy.optimize.lsq_linear(
     bounds=(0, 1),
     verbose=2, )
 
-# x_rec = scipy.optimize.minimize(fun=opt_fun(weight, lambda_re), x0=
+x_rec = scipy.optimize.minimize(fun=opt_fun(weight, lambda_re), x0=
