@@ -7,10 +7,6 @@ import scipy.optimize
 import debug_funs
 import funs
 
-import pydevd_pycharm
-
-pydevd_pycharm.settrace('192.168.0.120', port=2222, stdoutToServer=True, stderrToServer=True)
-
 
 def opt_fun(_weight, _proj, _lambda_re, ):
     """
