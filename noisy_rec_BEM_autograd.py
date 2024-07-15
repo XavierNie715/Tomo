@@ -130,8 +130,8 @@ if __name__ == '__main__':
     kappa_uv = 0
     # obs_decay = torch.tensor([])
 
-    # noise_intensity = 0.03
     np.random.seed(42)
+    # noise_intensity = 0.03
     noise_intensity = None
     down_size = down_sample(RESOLUTION, mode='mirror')
 
@@ -171,11 +171,22 @@ if __name__ == '__main__':
     phi_int = psi[0]
     # phi_int = ndimage.median_filter(psi[0], 5, mode='mirror')
     # uv_int = scipy.io.loadmat('./results/matlab_QR/ans_1e-3_alldiff_noisy_median5_256.mat')['ans'].ravel()
-    uv_int = np.zeros(NUM_ksi * 2)
-    x_int = np.concatenate((phi_int, uv_int), axis=0)
+    p_int = np.zeros(NUM_ksi * 2)
+    # uv_int = scipy.io.loadmat("C:\Ph.D_xyN/tomo/30Frames_PIVlab.mat")
+    # u = funcs.interpolate_piv_data(uv_int['u_smoothed'], 1024, 'linear')[256:768, 256:768]
+    # v = funcs.interpolate_piv_data(uv_int['v_smoothed'], 1024, 'linear')[256:768, 256:768]
+    # uv = scipy.io.loadmat("C://Ph.D_xyN//tomo//VField.mat")
+    # u = (uv['U'][256:768, 256:768])
+    # v = (uv['V'][256:768, 256:768])
+    # p_int = BEM.complex_field_from_velocity(u, v, NUM_ksi, DOMAIN_LENGTH,
+    #                                         cauchy_integral_matrix=cauchy_integral_matrix)
+    # p_int = np.concatenate((p_int.real, p_int.imag))
+    # p_int = np.load('./cache/p_int_32.npy')
+    x_int = np.concatenate((phi_int, p_int), axis=0)
 
     star_time = time.time()
     x_iter = []
+
     try:
         x_rec = minimize(BFGS_opt_func, x_int, method='L-BFGS-B',
                          backend='torch', precision="float64",
@@ -193,39 +204,38 @@ if __name__ == '__main__':
     cp_rec = x_rec.x[RESOLUTION ** 2:].reshape((-1, 2), order='F')
     cp_rec = cp_rec[:, 0] + 1j * cp_rec[:, 1]
     u_rec = (Dx_reso @ cauchy_integral_matrix.numpy() @ cp_rec).ravel().real
-    # v_rec = (Dy_reso @ cauchy_integral_matrix @ cp_rec).ravel().real
-    # uv = scipy.io.loadmat("C://Ph.D_xyN//tomo//VField.mat")
-    # u_gt = (uv['U'][256:768, 256:768]).ravel()
-    # v_gt = (uv['V'][256:768, 256:768]).ravel()
-    # rk4_rec = funcs.forward_model(u_rec, v_rec, DIFFUSION_COEFFICIENT, DELTA_T, DELTA_x, 'order-2')
-    # rk4_gt = funcs.forward_model(u_gt, v_gt, DIFFUSION_COEFFICIENT, DELTA_T, DELTA_x, 'order-2')
-    # phi_0_gt = down_size(scipy.io.loadmat("C:\Ph.D_xyN\Hele-Shaw Example new\Frame_0.1250_S.mat")['Phi']
-    #                      .reshape(1024, 1024)[256:768, 256:768]).ravel()
-    # phi_1_gt = down_size(scipy.io.loadmat("C:\Ph.D_xyN\Hele-Shaw Example new\Frame_0.1251_S.mat")['Phi']
-    #                      .reshape(1024, 1024)[256:768, 256:768]).ravel()
-    # phi_rec = np.concatenate((phi_0_rec, rk4_rec @ phi_0_rec), axis=0).reshape(2, -1)
-    # phi_gt_rk4 = np.concatenate((phi_0_gt, rk4_gt @ phi_0_gt), axis=0).reshape(2, -1)
-    #
-    # eval_obs_term = (np.linalg.norm(phi_rec - psi, axis=1) ** 2).mean()
-    # gt_obs_term = (np.linalg.norm(phi_gt_rk4 - psi, axis=1) ** 2).mean()
-    # eval_smooth_phi_term = 0.5 * kappa_phi * np.linalg.norm(L_reso @ phi_0_rec) ** 2
-    # gt_smooth_phi_term = 0.5 * kappa_phi * np.linalg.norm(L_reso @ phi_0_gt) ** 2
-    # eval_smooth_uv_term = 0.5 * kappa_uv * (np.linalg.norm(L_reso @ u_rec) ** 2 + np.linalg.norm(L_reso @ v_rec) ** 2)
-    # gt_smooth_uv_term = 0.5 * kappa_uv * (np.linalg.norm(L_reso @ u_gt) ** 2 + np.linalg.norm(L_reso @ v_gt) ** 2)
-    # rel_error_phi = np.linalg.norm(phi_0_gt - phi_0_rec) / np.linalg.norm(phi_0_gt)
-    # rel_error_uv = ((np.linalg.norm(u_rec - u_gt) + np.linalg.norm(v_rec - v_gt))
-    #                 / (np.linalg.norm(u_gt) + np.linalg.norm(v_gt)))
-    #
-    # print(f'kappa_phi = {kappa_phi}')
-    # print(f'kappa_uv = {kappa_uv}')
-    # print(f'eval_obs_term: {eval_obs_term:.3e}')
-    # print(f'gt_obs_term: {gt_obs_term:.3e}')
-    # print(f'eval_smooth_phi_term: {eval_smooth_phi_term:.3e}')
-    # print(f'gt_smooth_phi_term: {gt_smooth_phi_term:.3e}')
-    # print(f'eval_smooth_uv_term: {eval_smooth_uv_term:.3e}')
-    # print(f'gt_smooth_uv_term: {gt_smooth_uv_term:.3e}')
-    # print(f'rel_error_phi: {rel_error_phi:.3e}')
-    # print(f'rel_error_uv: {rel_error_uv:.3e}')
+    v_rec = (Dy_reso @ cauchy_integral_matrix.numpy() @ cp_rec).ravel().real
+    uv = scipy.io.loadmat("C://Ph.D_xyN//tomo//VField.mat")
+    u_gt = (uv['U'][256:768, 256:768]).ravel()
+    v_gt = (uv['V'][256:768, 256:768]).ravel()
+    dphi_dt_gt = funcs.dphi_dt(torch.tensor(u_gt), torch.tensor(v_gt), DIFFUSION_COEFFICIENT, DELTA_x)
+    dphi_dt_rec = funcs.dphi_dt(torch.tensor(u_rec), torch.tensor(v_rec), DIFFUSION_COEFFICIENT, DELTA_x)
+    phi_0_gt = down_size(scipy.io.loadmat(os.path.join(ROOT, f'Frame_0.{frame_start}_S.mat'))['Phi']
+                         .reshape(1024, 1024)[256:768, 256:768]).ravel()
+    phi_rk4_gt = torch.stack(forward_phi(FRAMES - 1, torch.tensor(phi_0_gt), dphi_dt_gt))
+    phi_rk4_rec = torch.stack(forward_phi(FRAMES - 1, torch.tensor(phi_0_rec), dphi_dt_rec))
+    eval_obs_term = (0.5 * (torch.linalg.norm(phi_rk4_rec - psi, axis=1).mean()) ** 2).item()
+    gt_obs_term = (0.5 * (torch.linalg.norm(phi_rk4_gt - psi, axis=1).mean()) ** 2).item()
+    # noise_obs_minus_gt = (0.5 * (torch.linalg.norm(torch.tensor(psi) - phi_rk4_gt, axis=1).mean()) ** 2).item()  # rk4数值误差见onlyP
+    eval_smooth_phi_term = 0.5 * kappa_phi * np.linalg.norm(L_reso @ phi_0_rec) ** 2
+    gt_smooth_phi_term = 0.5 * kappa_phi * np.linalg.norm(L_reso @ phi_0_gt) ** 2
+    eval_smooth_uv_term = 0.5 * kappa_uv * (np.linalg.norm(L_reso @ u_rec) ** 2 + np.linalg.norm(L_reso @ v_rec) ** 2)
+    gt_smooth_uv_term = 0.5 * kappa_uv * (np.linalg.norm(L_reso @ u_gt) ** 2 + np.linalg.norm(L_reso @ v_gt) ** 2)
+    rel_error_phi = np.linalg.norm(phi_0_gt - phi_0_rec) / np.linalg.norm(phi_0_gt)
+    rel_error_uv = (np.linalg.norm(np.concatenate((u_rec - u_gt, v_rec - v_gt)))
+                    / np.linalg.norm(np.concatenate((u_gt, v_gt))))
+
+    print(f'kappa_phi = {kappa_phi}')
+    print(f'kappa_uv = {kappa_uv}')
+    print(f'eval_obs_term: {eval_obs_term:.3e}')
+    print(f'gt_obs_term: {gt_obs_term:.3e}')
+    # print(f'noise_obs_minus_gt: {noise_obs_minus_gt:.3e}')
+    print(f'eval_smooth_phi_term: {eval_smooth_phi_term:.3e}')
+    print(f'gt_smooth_phi_term: {gt_smooth_phi_term:.3e}')
+    print(f'eval_smooth_uv_term: {eval_smooth_uv_term:.3e}')
+    print(f'gt_smooth_uv_term: {gt_smooth_uv_term:.3e}')
+    print(f'rel_error_phi: {rel_error_phi:.3e}')
+    print(f'rel_error_uv: {rel_error_uv:.3e}')
 
     plt.figure()
     plt.imshow(phi_0_rec.reshape(RESOLUTION, RESOLUTION), cmap=cm.jet)
@@ -233,10 +243,16 @@ if __name__ == '__main__':
     plt.savefig(os.path.join(SAVE_ROOT, SAVE_NAME, 'rec_phi_0.jpg'), dpi=300)
 
     plt.figure()
-    plt.imshow((Dx_reso @ cauchy_integral_matrix.numpy() @ cp_rec).ravel().real.reshape(RESOLUTION,
-                                                                                        RESOLUTION), cmap=cm.jet)
+    plt.imshow(u_rec.reshape(RESOLUTION, RESOLUTION), cmap=cm.jet)
     plt.colorbar()
+    plt.clim(-15, 0)
     plt.savefig(os.path.join(SAVE_ROOT, SAVE_NAME, 'rec_u.jpg'), dpi=300)
+
+    plt.figure()
+    plt.imshow(v_rec.reshape(RESOLUTION, RESOLUTION), cmap=cm.jet)
+    plt.colorbar()
+    plt.clim(0, 20)
+    plt.savefig(os.path.join(SAVE_ROOT, SAVE_NAME, 'rec_v.jpg'), dpi=300)
 
     # plt.figure()
     # plt.imshow((Dy_reso @ cauchy_integral_matrix @ cp_rec).ravel().real.reshape(RESOLUTION, RESOLUTION), cmap=cm.jet)
